@@ -275,11 +275,12 @@ namespace AndreyKurdiumov.AspNetCore.Helpers
             get
             {
                 EnsureDataBound();
-                if (!_dataSourceMaterialized)
-                {
-                    _rows = _dataSource.GetRows(SortInfo, PageIndex);
-                    _dataSourceMaterialized = true;
-                }
+
+                if(_dataSourceMaterialized)
+                    return this._rows;
+
+                this._rows = this._dataSource.GetRows(this.SortInfo, this.PageIndex);
+                this._dataSourceMaterialized = true;
                 return _rows;
             }
         }
@@ -752,9 +753,14 @@ namespace AndreyKurdiumov.AspNetCore.Helpers
             Func<dynamic, object> footer = null,
             object htmlAttributes = null)
         {
+            //avoid multiple enumeration
+            var localExclusions = exclusions != null ? exclusions.ToList() : new List<string>();
+            var webGridColumns = columns != null ? columns.ToList() : new List<WebGridColumn>();
+
+            
             if (columns == null)
             {
-                columns = GetDefaultColumns(exclusions);
+                columns = GetDefaultColumns(localExclusions);
             }
             // In order of precedence, the parameters that affect the visibility of columns in WebGrid - 
             // (1) "columns" argument of this method 
@@ -762,7 +768,7 @@ namespace AndreyKurdiumov.AspNetCore.Helpers
             // (3) "columnNames" argument of the constructor. 
             // At the time of binding we can verify if a simple property specified in the query string is a column that would be visible to the user. 
             // However, for complex properties or if either of (1) or (2) arguments are specified, we can only verify at this point. 
-            EnsureColumnIsSortable(columns);
+            EnsureColumnIsSortable(webGridColumns);
 
             if (emptyRowCellValue == null)
             {
@@ -771,7 +777,7 @@ namespace AndreyKurdiumov.AspNetCore.Helpers
 
             return WebGridRenderer.Table(this, HttpContext, tableStyle: tableStyle, headerStyle: headerStyle, footerStyle: footerStyle, rowStyle: rowStyle,
                                          alternatingRowStyle: alternatingRowStyle, selectedRowStyle: selectedRowStyle, caption: caption, displayHeader: displayHeader, fillEmptyRows: fillEmptyRows,
-                                         emptyRowCellValue: emptyRowCellValue, columns: columns, exclusions: exclusions, footer: footer, htmlAttributes: htmlAttributes);
+                                         emptyRowCellValue: emptyRowCellValue, columns: webGridColumns, exclusions: localExclusions, footer: footer, htmlAttributes: htmlAttributes);
         }
 
         /// <summary>
